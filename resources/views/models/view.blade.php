@@ -145,17 +145,21 @@
                                         <tr>
                                             <td><i class="{{ Helper::filetype_icon($file->filename) }} icon-med" aria-hidden="true"></i></td>
                                             <td>
-                                                @if ( Helper::checkUploadIsImage($file->get_src('assets')))
-                                                    <a href="{{ route('show/modelFile', ['modelId' => $model->id, 'fileId' =>$file->id]) }}" data-toggle="lightbox" data-type="image" data-title="{{ $file->filename }}" data-footer="{{ Helper::getFormattedDateObject($asset->last_checkout, 'datetime', false) }}">
-                                                        <img src="{{ route('show/modelfile', ['assetId' => $model->id, 'fileId' =>$file->id]) }}" style="max-width: 50px;">
+                                                @if ((Storage::exists('private_uploads/assetmodels/'.$file->filename)) && ( Helper::checkUploadIsImage($file->get_src('assetmodels'))))
+                                                    <a href="{{ route('show/modelfile', ['modelID' => $model->id, 'fileId' => $file->id]) }}" data-toggle="lightbox" data-type="image" data-title="{{ $file->filename }}">
+                                                        <img src="{{ route('show/modelfile', ['modelID' => $model->id, 'fileId' =>$file->id]) }}" style="max-width: 50px;">
                                                     </a>
                                                 @endif
                                             </td>
                                             <td>
-                                                {{ $file->filename }}
+                                                @if (Storage::exists('private_uploads/assetmodels/'.$file->filename))
+                                                    {{ $file->filename }}
+                                                @else
+                                                    <del>{{ $file->filename }}</del>
+                                                @endif
                                             </td>
-                                            <td data-value="{{ filesize(storage_path('private_uploads/assetmodels/').$file->filename) }}">
-                                                {{ Helper::formatFilesizeUnits(filesize(storage_path('private_uploads/assetmodels/').$file->filename)) }}
+                                            <td data-value="{{ (Storage::exists('private_uploads/assetmodels/'.$file->filename)) ? Storage::size('private_uploads/assetmodels/'.$file->filename) : '' }}">
+                                                {{ (Storage::exists('private_uploads/assetmodels/'.$file->filename)) ? Helper::formatFilesizeUnits(Storage::size('private_uploads/assetmodels/'.$file->filename)) : '' }}
                                             </td>
                                             <td>
                                                 @if ($file->note)
@@ -163,7 +167,7 @@
                                                 @endif
                                             </td>
                                             <td>
-                                                @if ($file->filename)
+                                                @if (($file->filename) && (Storage::exists('private_uploads/assetmodels/'.$file->filename)))
                                                     <a href="{{ route('show/modelfile', [$model->id, $file->id]) }}" class="btn btn-default">
                                                         <i class="fas fa-download" aria-hidden="true"></i>
                                                     </a>
@@ -221,6 +225,12 @@
 
 
                 <ul class="list-unstyled" style="line-height: 25px;">
+                    @if ($model->category)
+                        <li>{{ trans('general.category') }}:
+                            <a href="{{ route('categories.show', $model->category->id) }}">{{ $model->category->name }}</a>
+                        </li>
+                    @endif
+
                     @if ($model->manufacturer)
                         <li>
                             {{ trans('general.manufacturer') }}:

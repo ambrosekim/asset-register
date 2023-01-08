@@ -12,6 +12,7 @@ use App\Models\Statuslabel;
 use Crypt;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Image;
+use Carbon\Carbon;
 
 class Helper
 {
@@ -22,12 +23,13 @@ class Helper
      * @since [v2.0]
      * @return string
      */
-    public static function parseEscapedMarkedown($str)
+    public static function parseEscapedMarkedown($str = null)
     {
         $Parsedown = new \Parsedown();
+        $Parsedown->setSafeMode(true);
 
         if ($str) {
-            return $Parsedown->text(e($str));
+            return $Parsedown->text($str);
         }
     }
 
@@ -623,7 +625,7 @@ class Helper
     {
         $consumables = Consumable::withCount('consumableAssignments as consumable_assignments_count')->whereNotNull('min_amt')->get();
         $accessories = Accessory::withCount('users as users_count')->whereNotNull('min_amt')->get();
-        $components = Component::withCount('assets as assets_count')->whereNotNull('min_amt')->get();
+        $components = Component::whereNotNull('min_amt')->get();
 
         $avail_consumables = 0;
         $items_array = [];
@@ -668,7 +670,7 @@ class Helper
         }
 
         foreach ($components as $component) {
-            $avail = $component->qty - $component->assets_count;
+            $avail = $component->numRemaining();
             if ($avail < ($component->min_amt) + \App\Models\Setting::getSettings()->alert_threshold) {
                 if ($component->qty > 0) {
                     $percent = number_format((($avail / $component->qty) * 100), 0);
@@ -1124,5 +1126,25 @@ class Helper
 
         return $settings;
         }
+    public static function AgeFormat($date) {
+        $year = Carbon::parse($date)
+            ->diff(now())->y;
+        $month = Carbon::parse($date)
+            ->diff(now())->m;
+        $days = Carbon::parse($date)
+            ->diff(now())->d;
+        $age='';
+        if ($year) {
+            $age .= $year.'y ';
+        }
+        if ($month) {
+            $age .= $month.'m ';
+        }
+        if ($days) {
+            $age .= $days.'d';
+        }
 
+        return $age;
+
+    }
 }

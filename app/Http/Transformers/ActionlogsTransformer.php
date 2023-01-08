@@ -85,6 +85,7 @@ class ActionlogsTransformer
                 'id' => (int) $actionlog->item->id,
                 'name' => ($actionlog->itemType()=='user') ? e($actionlog->item->getFullNameAttribute()) : e($actionlog->item->getDisplayNameAttribute()),
                 'type' => e($actionlog->itemType()),
+                'serial' =>e($actionlog->item->serial) ? e($actionlog->item->serial) : null
             ] : null,
             'location' => ($actionlog->location) ? [
                 'id' => (int) $actionlog->location->id,
@@ -95,11 +96,11 @@ class ActionlogsTransformer
             'next_audit_date' => ($actionlog->itemType()=='asset') ? Helper::getFormattedDateObject($actionlog->calcNextAuditDate(null, $actionlog->item), 'date'): null,
             'days_to_next_audit' => $actionlog->daysUntilNextAudit($settings->audit_interval, $actionlog->item),
             'action_type'   => $actionlog->present()->actionType(),
-            'admin' => ($actionlog->user) ? [
-                'id' => (int) $actionlog->user->id,
-                'name' => e($actionlog->user->getFullNameAttribute()),
-                'first_name'=> e($actionlog->user->first_name),
-                'last_name'=> e($actionlog->user->last_name)
+            'admin' => ($actionlog->admin) ? [
+                'id' => (int) $actionlog->admin->id,
+                'name' => e($actionlog->admin->getFullNameAttribute()),
+                'first_name'=> e($actionlog->admin->first_name),
+                'last_name'=> e($actionlog->admin->last_name)
             ] : null,
             'target' => ($actionlog->target) ? [
                 'id' => (int) $actionlog->target->id,

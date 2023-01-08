@@ -14,7 +14,7 @@ return [
     'upload'                    => 'Upload',
     'select_file'				=> 'Odaberite datoteku...',
     'select_files'				=> 'Odaberite datoteke...',
-    'generate_labels'           => '{1} Generiši oznaku|[2,*] Generiši oznake',
+    'generate_labels'           => '{1} Generiši nalepnicu|[2,*] Generiši nalepnice',
     'send_password_link'        => 'Pošalji vezu za reset lozinke',
     'go'                        => 'Kreni',
     'bulk_actions'              => 'Masovne radnje',

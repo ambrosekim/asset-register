@@ -6,7 +6,7 @@ return [
   'bulk_delete_warn'	=> ':asset_cont 件の資産を削除しました',
     'bulk_update'		=> '資産を一括更新',
     'bulk_update_help'	=> 'このフォームは一度に複数の資産を更新することが可能です。変更が必要なフィールドにのみ入力をして下さい。ブランクのフィールドは変更されません。 ',
-    'bulk_update_warn'	=> '資産群（:asset_count）のプロパティを編集します。',
+    'bulk_update_warn'	=> '単一資産のプロパティを編集しようとしています。|:asset_count 件のプロパティを編集しようとしています。',
     'checkedout_to'		=> 'チェックアウト先',
     'checkout_date'		=> 'チェックアウト日',
     'checkin_date'		=> 'チェックイン日',
@@ -46,6 +46,6 @@ return [
     'asset_not_deployable' => 'その資産ステータスは配備可能ではありません。この資産はチェックアウトできません。',
     'asset_deployable' => 'その資産ステータスは配備可能です。この資産はチェックアウトできます。',
     'processing_spinner' => '処理中…',
-    'optional_infos'  => 'Optional Information',
-    'order_details'   => 'Order Related Information'
+    'optional_infos'  => 'オプション情報',
+    'order_details'   => 'オーダー関連情報'
 ];

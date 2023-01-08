@@ -22,6 +22,8 @@ use Illuminate\Support\Facades\View;
 use Input;
 use League\Csv\Reader;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use League\Csv\EscapeFormula;
+
 
 /**
  * This controller handles all actions related to Reports for
@@ -411,6 +413,7 @@ class ReportsController extends Controller
         $customfields = CustomField::get();
         $response = new StreamedResponse(function () use ($customfields, $request) {
             \Log::debug('Starting streamed response');
+            \Log::debug('CSV escaping is set to: '.config('app.escape_formulas'));
 
             // Open output stream
             $handle = fopen('php://output', 'w');
@@ -422,6 +425,9 @@ class ReportsController extends Controller
 
             $header = [];
 
+            if ($request->filled('id')) {
+                $header[] = trans('general.id');
+            }
 
             if ($request->filled('company')) {
                 $header[] = trans('general.company');
@@ -568,6 +574,10 @@ class ReportsController extends Controller
                 $header[] = trans('general.notes');
             }
 
+            if ($request->filled('url')) {
+                $header[] = trans('admin/manufacturers/table.url');
+            }
+
 
             foreach ($customfields as $customfield) {
                 if ($request->input($customfield->db_column_name()) == '1') {
@@ -582,7 +592,7 @@ class ReportsController extends Controller
             \Log::debug('Added headers: '.$executionTime);
 
             $assets = \App\Models\Company::scopeCompanyables(Asset::select('assets.*'))->with(
-                'location', 'assetstatus', 'assetlog', 'company', 'defaultLoc', 'assignedTo',
+                'location', 'assetstatus', 'company', 'defaultLoc', 'assignedTo',
                 'model.category', 'model.manufacturer', 'supplier');
             
             if ($request->filled('by_location_id')) {
@@ -659,10 +669,17 @@ class ReportsController extends Controller
                 $executionTime = microtime(true) - $_SERVER['REQUEST_TIME_FLOAT'];
                 \Log::debug('Walking results: '.$executionTime);
                 $count = 0;
+
+                $formatter = new EscapeFormula("`");
+
                 foreach ($assets as $asset) {
                     $count++;
                     $row = [];
-                    
+
+                    if ($request->filled('id')) {
+                        $row[] = ($asset->id) ? $asset->id : '';
+                    }
+
                     if ($request->filled('company')) {
                         $row[] = ($asset->company) ? $asset->company->name : '';
                     }
@@ -834,13 +851,27 @@ class ReportsController extends Controller
                         $row[] = ($asset->notes) ? $asset->notes : '';
                     }
 
+                    if ($request->filled('url')) {
+                        $row[] = config('app.url').'/hardware/'.$asset->id ;
+                    }
+
                     foreach ($customfields as $customfield) {
                         $column_name = $customfield->db_column_name();
                         if ($request->filled($customfield->db_column_name())) {
                             $row[] = $asset->$column_name;
                         }
                     }
-                    fputcsv($handle, $row);
+
+                    
+                    // CSV_ESCAPE_FORMULAS is set to false in the .env
+                    if (config('app.escape_formulas') === false) {
+                        fputcsv($handle, $row);
+
+                   // CSV_ESCAPE_FORMULAS is set to true or is not set in the .env
+                    } else {
+                        fputcsv($handle, $formatter->escapeRecord($row));
+                    }
+
                     $executionTime = microtime(true) - $_SERVER['REQUEST_TIME_FLOAT'];
                     \Log::debug('-- Record '.$count.' Asset ID:'.$asset->id.' in '.$executionTime);
                 }
@@ -991,7 +1022,11 @@ class ReportsController extends Controller
         }
         $assetItem = $acceptance->checkoutable;
 
-        $logItem = $assetItem->checkouts()->where('created_at', '=', $acceptance->created_at)->get()[0];
+        if (is_null($acceptance->created_at)){
+            return redirect()->route('reports/unaccepted_assets')->with('error', trans('general.bad_data'));
+        } else {
+            $logItem = $assetItem->checkouts()->where('created_at', '=', $acceptance->created_at)->get()[0];
+        }
 
         if(!$assetItem->assignedTo->locale){
             Notification::locale(Setting::getSettings()->locale)->send(
@@ -1048,9 +1083,9 @@ class ReportsController extends Controller
          * Get all assets with pending checkout acceptances
          */
         if($showDeleted) {
-            $acceptances = CheckoutAcceptance::pending()->withTrashed()->with(['assignedTo', 'checkoutable.assignedTo', 'checkoutable.model'])->get();
+            $acceptances = CheckoutAcceptance::pending()->where('checkoutable_type', 'App\Models\Asset')->withTrashed()->with(['assignedTo', 'checkoutable.assignedTo', 'checkoutable.model'])->get();
         } else {
-            $acceptances = CheckoutAcceptance::pending()->with(['assignedTo', 'checkoutable.assignedTo', 'checkoutable.model'])->get();
+            $acceptances = CheckoutAcceptance::pending()->where('checkoutable_type', 'App\Models\Asset')->with(['assignedTo', 'checkoutable.assignedTo', 'checkoutable.model'])->get();
         }
 
         $assetsForReport = $acceptances
@@ -1075,13 +1110,19 @@ class ReportsController extends Controller
         $rows[] = implode(',', $header);
 
         foreach ($assetsForReport as $item) {
-            $row    = [ ];
-            $row[]  = str_replace(',', '', e($item['assetItem']->model->category->name));
-            $row[]  = str_replace(',', '', e($item['assetItem']->model->name));
-            $row[]  = str_replace(',', '', e($item['assetItem']->name));
-            $row[]  = str_replace(',', '', e($item['assetItem']->asset_tag));
-            $row[]  = str_replace(',', '', e(($item['acceptance']->assignedTo) ? $item['acceptance']->assignedTo->present()->name() : trans('admin/reports/general.deleted_user')));
-            $rows[] = implode(',', $row);
+
+            if ($item['assetItem'] != null){
+            
+                $row    = [ ];
+                $row[]  = str_replace(',', '', e($item['assetItem']->model->category->name));
+                $row[]  = str_replace(',', '', e($item['assetItem']->model->name));
+                $row[]  = str_replace(',', '', e($item['assetItem']->name));
+                $row[]  = str_replace(',', '', e($item['assetItem']->asset_tag));
+                $row[]  = str_replace(',', '', e(($item['acceptance']->assignedTo) ? $item['acceptance']->assignedTo->present()->name() : trans('admin/reports/general.deleted_user')));
+                $rows[] = implode(',', $row);
+            } else {
+                // Log the error maybe?
+            }
         }
 
         // spit out a csv

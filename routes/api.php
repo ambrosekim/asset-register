@@ -280,11 +280,20 @@ Route::group(['prefix' => 'v1', 'middleware' => ['api', 'throttle:api']], functi
             ]
         )->name('api.consumables.selectlist');
 
-        Route::get('view/{id}/users',
+        Route::get('{id}/users',
             [
                 Api\ConsumablesController::class, 
                 'getDataView'
             ]
+        )->name('api.consumables.showUsers');
+
+
+        // This is LEGACY endpoint URL and should be removed in the next major release
+        Route::get('view/{id}/users',
+              [
+                  Api\ConsumablesController::class,
+                  'getDataView'
+              ]
         )->name('api.consumables.showUsers');
 
         Route::post('{consumable}/checkout',
@@ -850,14 +859,21 @@ Route::group(['prefix' => 'v1', 'middleware' => ['api', 'throttle:api']], functi
                 ]
             )->name('api.statuslabels.selectlist');
 
-            Route::get('assets',
+            Route::get('assets/name',
                 [
                     Api\StatuslabelsController::class, 
                     'getAssetCountByStatuslabel'
                 ]
+            )->name('api.statuslabels.assets.byname');
+
+            Route::get('assets/type',
+                [
+                    Api\StatuslabelsController::class,
+                    'getAssetCountByMetaStatus'
+                ]
             )->name('api.statuslabels.assets.bytype');
 
-            Route::get('assetlist',
+            Route::get('{id}/assetlist',
                 [
                     Api\StatuslabelsController::class, 
                     'assets'
@@ -959,6 +975,13 @@ Route::group(['prefix' => 'v1', 'middleware' => ['api', 'throttle:api']], functi
                 'assets'
             ]
             )->name('api.users.assetlist');
+
+            Route::post('{user}/email',
+                [
+                    Api\UsersController::class,
+                    'emailAssetList'
+                ]
+            )->name('api.users.email_assets');
 
             Route::get('{user}/accessories',
             [

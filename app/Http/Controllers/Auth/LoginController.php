@@ -135,9 +135,7 @@ class LoginController extends Controller
         } else {
 
             // Better logging
-            if (!$saml->isEnabled()) {
-                \Log::debug("SAML page requested, but SAML does not seem to enabled.");
-            } else {
+            if (empty($samlData)) {
                 \Log::debug("SAML page requested, but samlData seems empty.");
             }
         }
@@ -473,6 +471,11 @@ class LoginController extends Controller
         }
 
         $request->session()->regenerate(true);
+
+        if ($request->session()->has('password_hash_'.Auth::getDefaultDriver())){
+            $request->session()->remove('password_hash_'.Auth::getDefaultDriver());
+        }
+
         Auth::logout();
 
         if (! empty($sloRedirectUrl)) {

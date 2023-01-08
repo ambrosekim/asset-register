@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Helpers\Helper;
 use App\Models\Traits\Acceptable;
 use App\Models\Traits\Searchable;
 use App\Presenters\Presentable;
@@ -98,6 +99,23 @@ class Accessory extends SnipeModel
         'notes',
     ];
 
+
+
+    /**
+     * Establishes the accessories -> action logs -> uploads relationship
+     *
+     * @author A. Gianotto <snipe@snipe.net>
+     * @since [v6.1.13]
+     * @return \Illuminate\Database\Eloquent\Relations\Relation
+     */
+    public function uploads()
+    {
+        return $this->hasMany(\App\Models\Actionlog::class, 'item_id')
+            ->where('item_type', '=', self::class)
+            ->where('action_type', '=', 'uploaded')
+            ->whereNotNull('filename')
+            ->orderBy('created_at', 'desc');
+    }
 
 
     /**
@@ -299,15 +317,14 @@ class Accessory extends SnipeModel
      */
     public function getEula()
     {
-        $Parsedown = new \Parsedown();
 
         if ($this->category->eula_text) {
-            return $Parsedown->text(e($this->category->eula_text));
+            return Helper::parseEscapedMarkedown($this->category->eula_text);
         } elseif ((Setting::getSettings()->default_eula_text) && ($this->category->use_default_eula == '1')) {
-            return $Parsedown->text(e(Setting::getSettings()->default_eula_text));
+            return Helper::parseEscapedMarkedown(Setting::getSettings()->default_eula_text);
         }
 
-            return null;
+        return null;
     }
 
      /**
